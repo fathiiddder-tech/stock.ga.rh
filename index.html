@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Stock General Affairs</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#f4f6f9;
+    margin:20px;
+}
+
+h1{
+    color:#1e3a8a;
+}
+
+.container{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+input, select, button{
+    padding:8px;
+    margin:5px;
+}
+
+button{
+    background:#2563eb;
+    color:white;
+    border:none;
+    border-radius:5px;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#1d4ed8;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:20px;
+}
+
+table th{
+    background:#2563eb;
+    color:white;
+    padding:10px;
+}
+
+table td{
+    border:1px solid #ddd;
+    padding:8px;
+    text-align:center;
+}
+
+.stock-low{
+    background:#fee2e2;
+    color:red;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Gestion de Stock General Affairs</h1>
+
+<div class="container">
+
+<h3>Ajouter un article</h3>
+
+<select id="article">
+    <option>Blouse</option>
+    <option>Casier</option>
+    <option>Badge</option>
+    <option>Micro-onde</option>
+    <option>Chaise</option>
+    <option>Bureau</option>
+    <option>Autre</option>
+</select>
+
+<select id="taille">
+    <option value="">Sans Taille</option>
+    <option>XS</option>
+    <option>S</option>
+    <option>M</option>
+    <option>L</option>
+    <option>XL</option>
+    <option>XXL</option>
+</select>
+
+<input type="number" id="quantite" placeholder="Quantité">
+
+<button onclick="ajouterStock()">Ajouter au Stock</button>
+
+<hr>
+
+<h3>Sortie d'article</h3>
+
+<select id="sortieArticle"></select>
+
+<input type="number" id="sortieQte" placeholder="Quantité sortie">
+
+<button onclick="sortirArticle()">Enregistrer Sortie</button>
+
+<hr>
+
+<h3>Stock Disponible</h3>
+
+<table id="tableStock">
+<thead>
+<tr>
+<th>Article</th>
+<th>Taille</th>
+<th>Entrées</th>
+<th>Sorties</th>
+<th>Stock Restant</th>
+</tr>
+</thead>
+<tbody></tbody>
+</table>
+
+</div>
+
+<script>
+
+let stock = JSON.parse(localStorage.getItem("stockGA")) || [];
+
+function sauvegarder(){
+    localStorage.setItem("stockGA",JSON.stringify(stock));
+}
+
+function ajouterStock(){
+
+    const article=document.getElementById("article").value;
+    const taille=document.getElementById("taille").value;
+    const qte=parseInt(document.getElementById("quantite").value);
+
+    if(!qte || qte<=0){
+        alert("Entrer une quantité valide");
+        return;
+    }
+
+    const index=stock.findIndex(
+        item=>item.article===article && item.taille===taille
+    );
+
+    if(index>=0){
+        stock[index].entrees+=qte;
+    }else{
+        stock.push({
+            article:article,
+            taille:taille,
+            entrees:qte,
+            sorties:0
+        });
+    }
+
+    sauvegarder();
+    afficherStock();
+}
+
+function sortirArticle(){
+
+    const valeur=document.getElementById("sortieArticle").value;
+    const qte=parseInt(document.getElementById("sortieQte").value);
+
+    if(!qte || qte<=0){
+        alert("Quantité invalide");
+        return;
+    }
+
+    const index=stock.findIndex(item =>
+        item.article+"|"+item.taille===valeur
+    );
+
+    if(index==-1) return;
+
+    const restant =
+    stock[index].entrees-stock[index].sorties;
+
+    if(qte>restant){
+        alert("Stock insuffisant");
+        return;
+    }
+
+    stock[index].sorties+=qte;
+
+    sauvegarder();
+    afficherStock();
+}
+
+function afficherStock(){
+
+    const tbody=document.querySelector("#tableStock tbody");
+    tbody.innerHTML="";
+
+    const listeSortie=document.getElementById("sortieArticle");
+    listeSortie.innerHTML="";
+
+    stock.forEach(item=>{
+
+        let restant=item.entrees-item.sorties;
+
+        let ligne=`
+        <tr ${restant<5 ? 'class="stock-low"' : ''}>
+            <td>${item.article}</td>
+            <td>${item.taille||'-'}</td>
+            <td>${item.entrees}</td>
+            <td>${item.sorties}</td>
+            <td>${restant}</td>
+        </tr>`;
+
+        tbody.innerHTML+=ligne;
+
+        listeSortie.innerHTML+=`
+        <option value="${item.article}|${item.taille}">
+        ${item.article} ${item.taille}
+        </option>`;
+    });
+}
+
+afficherStock();
+
+</script>
+
+</body>
+</html>
